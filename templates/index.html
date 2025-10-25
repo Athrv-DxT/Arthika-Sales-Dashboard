@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Arthik: Sales Dashboard</title>
+  <meta name="description" content="Interactive sales dashboard with real-time analytics, forecasting, and data visualization">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>अRthika</h1>
+      <p class="tagline">your sales dashboard</p>
+    </div>
+    <nav class="controls" role="region" aria-label="Dashboard Filters">
+      <div class="filter-group">
+        <label for="region-select">Region:</label>
+        <select id="region-select" aria-label="Filter by region" aria-describedby="region-help">
+          <option value="all">All Regions</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="product-select">Product:</label>
+        <select id="product-select" aria-label="Filter by product" aria-describedby="product-help">
+          <option value="all">All Products</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="from-date">From Date:</label>
+        <input id="from-date" type="date" aria-label="Filter from date" aria-describedby="date-help" />
+      </div>
+      
+      <div class="filter-group">
+        <label for="to-date">To Date:</label>
+        <input id="to-date" type="date" aria-label="Filter to date" aria-describedby="date-help" />
+      </div>
+
+      <div class="filter-actions">
+        <button id="apply-filters" class="primary" aria-describedby="apply-help">Apply Filters</button>
+        <button id="reset-filters" aria-describedby="reset-help">Reset</button>
+      </div>
+    </nav>
+    
+    <div id="filter-help" class="sr-only">
+      <p id="region-help">Select a specific region to filter sales data</p>
+      <p id="product-help">Select a specific product to filter sales data</p>
+      <p id="date-help">Select date range to filter sales data</p>
+      <p id="apply-help">Apply the selected filters to update the dashboard</p>
+      <p id="reset-help">Clear all filters and show all data</p>
+    </div>
+  </header>
+
+  <main id="dashboard" aria-live="polite">
+    <div id="loading-indicator" class="loading" style="display: none;" aria-hidden="true">
+      <div class="loading-spinner"></div>
+      <p>Loading dashboard data...</p>
+    </div>
+
+    <!-- Error message -->
+    <div id="error-message" class="error" style="display: none;" role="alert" aria-live="assertive">
+      <h3>Error Loading Data</h3>
+      <p id="error-text">Unable to load dashboard data. Please try again.</p>
+      <button id="retry-loading" class="primary">Retry</button>
+    </div>
+
+    <!-- Key Performance Indicators -->
+    <section class="kpis" id="kpis" aria-label="Key Performance Indicators">
+      <div class="kpi" tabindex="0" aria-label="Total revenue">
+        <h3>Total Revenue</h3>
+        <p id="total-revenue" aria-live="polite">—</p>
+        <small>All time sales revenue</small>
+      </div>
+      <div class="kpi" tabindex="0" aria-label="Total quantity">
+        <h3>Total Quantity</h3>
+        <p id="total-quantity" aria-live="polite">—</p>
+        <small>Units sold</small>
+      </div>
+      <div class="kpi" tabindex="0" aria-label="Period over period change">
+        <h3>Period-over-Period</h3>
+        <p id="pop-change" aria-live="polite">—</p>
+        <small>30-day comparison</small>
+      </div>
+    </section>
+
+    <!-- Main Charts Section -->
+    <section class="charts" aria-label="Sales Analytics Charts">
+      <div class="card">
+        <h2>Sales Over Time</h2>
+        <div class="chart-container">
+          <canvas id="timeseries-chart" role="img" aria-label="Line chart "></canvas>
+        </div>
+        <p class="chart-description">Daily sales revenue trends </p>
+      </div>
+
+      <div class="card">
+        <h2>Sales by Region</h2>
+        <div class="chart-container">
+          <canvas id="region-pie" role="img" aria-label="Pie chart "></canvas>
+        </div>
+        <p class="chart-description">Revenue distribution across different sales regions</p>
+      </div>
+
+      <div class="card">
+        <h2>Top 5 Products</h2>
+        <div id="top-products" aria-live="polite">
+          <div class="loading-placeholder">Loading product data...</div>
+        </div>
+        <p class="chart-description">Best performing products </p>
+      </div>
+    </section>
+
+    <!-- Advanced Analytics -->
+    <section class="advanced" aria-label="Advanced Analytics">
+      <div class="card">
+        <h2>Sales Forecast</h2>
+        <div class="chart-container">
+          <canvas id="forecast-chart" role="img" aria-label="Forecast chart"></canvas>
+        </div>
+        <p class="chart-description">Moving average and linear regression forecasting</p>
+        <div class="forecast-controls">
+          <label for="forecast-days">Forecast Days:</label>
+          <select id="forecast-days" aria-label="Number of days to forecast">
+            <option value="7">7 days</option>
+            <option value="14">14 days</option>
+            <option value="30">30 days</option>
+          </select>
+          <button id="apply-forecast" class="primary">Apply</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Sales Clusters</h2>
+        <div class="chart-container">
+          <canvas id="cluster-chart" role="img" aria-label="Scatter plot "></canvas>
+        </div>
+        <p class="chart-description">Product clustering based on sales patterns</p>
+        <div class="cluster-controls">
+          <label for="cluster-count">Clusters:</label>
+          <select id="cluster-count" aria-label="Number of clusters">
+            <option value="2">2 clusters</option>
+            <option value="3" selected>3 clusters</option>
+            <option value="4">4 clusters</option>
+            <option value="5">5 clusters</option>
+          </select>
+          <button id="apply-cluster" class="primary">Apply</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Export and Settings -->
+    <section class="actions card" aria-label="Export and Settings">
+      <h3>Export & Settings</h3>
+      <div class="action-buttons">
+        <button id="export-csv" class="primary" aria-describedby="export-csv-help">
+          Export CSV
+        </button>
+        <button id="export-pdf" aria-describedby="export-pdf-help">
+          Export PDF
+        </button>
+      </div>
+      
+      <div class="settings">
+        <label class="setting-item">
+          <input type="checkbox" id="enable-polling" aria-describedby="polling-help">
+          <span>Enable real-time updates</span>
+          <small id="polling-help">Automatically refresh data every 10 seconds</small>
+        </label>
+      </div>
+      
+      <div id="export-help" class="sr-only">
+        <p id="export-csv-help">Download filtered sales data as CSV file</p>
+        <p id="export-pdf-help">Download dashboard as PDF report</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Notification container -->
+  <div id="notification-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
