@@ -4,7 +4,9 @@ services:
     env: python
     plan: free
     region: oregon
+    runtime: python
     buildCommand: |
+      python --version
       python -m pip install --upgrade pip
       pip install -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 60 app:app
